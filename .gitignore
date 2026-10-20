@@ -1,0 +1,13 @@
+# Binarios e builds
+*.exe
+*.o
+*.obj
+build/
+bin/
+
+# IDEs
+.vscode/
+.idea/
+
+# Ignorar README a pedido
+README.md
