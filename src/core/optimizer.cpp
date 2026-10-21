@@ -4,6 +4,9 @@
 #include <windows.h>
 #include <shellapi.h>
 
+//nesse arquivo, basicamente, ele limpa a lixeira, limpa o cache DNS e limpa os arquivos temporários do Windows e do Usuário
+//as bibliotecas utilizadas são a filesystem para manipular arquivos e diretórios, a windows.h para funções do Windows e a shellapi.h para esvaziar a lixeira
+
 namespace fs = std::filesystem;
 
 bool emptyRecycleBin() {
@@ -16,23 +19,34 @@ bool emptyRecycleBin() {
     return (result == S_OK || result == S_FALSE);
 }
 
+typedef BOOL (WINAPI *pfnDnsFlushResolverCache)();
+
 bool flushDns() {
+    HMODULE hDnsApi = LoadLibraryA("dnsapi.dll");
+    if (hDnsApi) {
+        pfnDnsFlushResolverCache DnsFlush = 
+            (pfnDnsFlushResolverCache)GetProcAddress(hDnsApi, "DnsFlushResolverCache");
+        
+        if (DnsFlush) {
+            BOOL res = DnsFlush();
+            FreeLibrary(hDnsApi);
+            if (res) return true;
+        } else {
+            FreeLibrary(hDnsApi);
+        }
+    }
+
     int exitCode = system("ipconfig /flushdns > nul 2>&1");
     return (exitCode == 0);
 }
 
-CleanResult cleanTempFiles() {
-    CleanResult result;
+static void cleanDirectory(const fs::path& dirPath, CleanResult& result) {
     std::error_code ec;
-
-    fs::path tempPath = fs::temp_directory_path(ec);
-    if (ec) {
-        result.success = false;
-        return result;
+    if (!fs::exists(dirPath, ec) || !fs::is_directory(dirPath, ec)) {
+        return;
     }
 
-    for (const auto& entry : fs::directory_iterator(tempPath, fs::directory_options::skip_permission_denied, ec)) {
-        
+    for (const auto& entry : fs::directory_iterator(dirPath, fs::directory_options::skip_permission_denied, ec)) {
         std::error_code removeEc;
         uintmax_t fileSize = 0;
 
@@ -41,13 +55,30 @@ CleanResult cleanTempFiles() {
         }
 
         bool removed = fs::remove_all(entry.path(), removeEc);
-
         if (removed && !removeEc) {
             result.filesDeleted++;
             result.bytesFreed += fileSize;
         } else {
             result.filesFailed++;
         }
+    }
+}
+
+CleanResult cleanTempFiles() {
+    CleanResult result;
+    std::error_code ec;
+
+    //aqui limpa a pasta temporária do Usuário (%temp%)
+    fs::path userTempPath = fs::temp_directory_path(ec);
+    if (!ec) {
+        cleanDirectory(userTempPath, result);
+    }
+
+    //e aqui limpa a pasta temporária do Windows temp
+    wchar_t winDir[MAX_PATH];
+    if (GetWindowsDirectoryW(winDir, MAX_PATH) > 0) {
+        fs::path windowsTempPath = fs::path(winDir) / "Temp";
+        cleanDirectory(windowsTempPath, result);
     }
 
     result.success = true;
@@ -57,12 +88,11 @@ CleanResult cleanTempFiles() {
 int main() {
     SetConsoleOutputCP(CP_UTF8);
 
-    std::cout << "========================================\n";
-    std::cout << "          OPTIMIZER - TESTE             \n";
-    std::cout << "========================================\n";
+    std::cout << "TESTE\n\n";
+
     std::cout << "1. Esvaziar Lixeira\n";
     std::cout << "2. Limpar Cache DNS (Flush DNS)\n";
-    std::cout << "3. Limpar Arquivos Temporários (%temp%)\n";
+    std::cout << "3. Limpar Arquivos Temporários (%temp% e Windows Temp)\n";
     std::cout << "0. Sair\n";
     std::cout << "Escolha uma opcao: ";
 
@@ -89,7 +119,7 @@ int main() {
             break;
         }
         case 3: {
-            std::cout << "\nLimpando arquivos temporários...\n";
+            std::cout << "\nLimpando arquivos temporários (%temp% e Windows Temp)...\n";
             CleanResult res = cleanTempFiles();
             
             double mbFreed = (double)res.bytesFreed / (1024.0 * 1024.0);

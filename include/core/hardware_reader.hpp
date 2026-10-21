@@ -24,7 +24,6 @@ struct CpuInfo {
     double currentUsagePercent;
 };
 
-// Funções para leitura de hardware
 RamInfo getRamInfo();
 DiskInfo getDiskInfo(const std::wstring& drive = L"C:\\");
 double getCpuUsagePercent();

@@ -3,11 +3,14 @@
 #include <iomanip>
 #include <windows.h>
 
-// Converte FILETIME para inteiro de 64 bits
+// esse aquivo é simplesmente a criação de funções para pegar informações do hardware do computador, 
+// e a main somente exibe
+
+// aqui ele converte para um inteiro de 64 bits, para poder fazer a conta de porcentagem do uso da CPU
 static ULONGLONG fileTimeToUInt64(const FILETIME& ft) {
     return (((ULONGLONG)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
 }
-
+// informações de ram
 RamInfo getRamInfo() {
     MEMORYSTATUSEX statex;
     statex.dwLength = sizeof(statex);
@@ -23,7 +26,7 @@ RamInfo getRamInfo() {
 
     return info;
 }
-
+//informações de disco
 DiskInfo getDiskInfo(const std::wstring& drive) {
     ULARGE_INTEGER freeBytesAvailable;
     ULARGE_INTEGER totalNumberOfBytes;
@@ -51,20 +54,20 @@ DiskInfo getDiskInfo(const std::wstring& drive) {
 
     return info;
 }
-
+//informações de CPU
 std::string getCpuModelName() {
     HKEY hKey;
     char cpuBrand[256] = "Processador Desconhecido";
     DWORD bufferSize = sizeof(cpuBrand);
 
-    // Lê o nome oficial da CPU registrado no Windows
+    // Le o nome oficial da CPU registrado no Windows
     if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
         RegQueryValueExA(hKey, "ProcessorNameString", NULL, NULL, (LPBYTE)cpuBrand, &bufferSize);
         RegCloseKey(hKey);
     }
     return std::string(cpuBrand);
 }
-
+// retorna a quantidade de núcleos da CPU
 int getCpuLogicalCores() {
     SYSTEM_INFO sysInfo;
     GetSystemInfo(&sysInfo);
@@ -76,6 +79,7 @@ static ULONGLONG prevKernel = 0;
 static ULONGLONG prevUser = 0;
 static bool cpuInitialized = false;
 
+// retorna a porcentagem de uso da CPU
 double getCpuUsagePercent() {
     FILETIME idleTime, kernelTime, userTime;
     if (!GetSystemTimes(&idleTime, &kernelTime, &userTime)) {
@@ -86,6 +90,7 @@ double getCpuUsagePercent() {
     ULONGLONG kernel = fileTimeToUInt64(kernelTime);
     ULONGLONG user = fileTimeToUInt64(userTime);
 
+    
     if (!cpuInitialized) {
         prevIdle = idle;
         prevKernel = kernel;
@@ -119,10 +124,7 @@ double getCpuUsagePercent() {
 
 int main() {
     SetConsoleOutputCP(CP_UTF8);
-
-    std::cout << "========================================\n";
-    std::cout << "       HARDWARE READER - DIAGNOSTICO    \n";
-    std::cout << "========================================\n\n";
+    std::cout << "Exibição de Informações do Hardware\n\n";
 
     std::cout << "[CPU] " << getCpuModelName() << "\n";
     std::cout << "  - Núcleos Lógicos: " << getCpuLogicalCores() << "\n";
