@@ -5,9 +5,14 @@
 build/
 bin/
 
-# IDEs
+# IDEs e arquivos de execucao/rascunho
 .vscode/
 .idea/
+imgui.ini
+
+# Bibliotecas externas usadas no esboco
+libs/
 
 # Ignorar README a pedido
 README.md
+

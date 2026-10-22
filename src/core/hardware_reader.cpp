@@ -122,6 +122,7 @@ double getCpuUsagePercent() {
     return percent;
 }
 
+#ifdef STANDALONE_HARDWARE_READER
 int main() {
     SetConsoleOutputCP(CP_UTF8);
     std::cout << "Exibição de Informações do Hardware\n\n";
@@ -157,3 +158,4 @@ int main() {
     std::cout << "========================================\n";
     return 0;
 }
+#endif

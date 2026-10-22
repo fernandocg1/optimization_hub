@@ -85,6 +85,7 @@ CleanResult cleanTempFiles() {
     return result;
 }
 
+#ifdef STANDALONE_OPTIMIZER
 int main() {
     SetConsoleOutputCP(CP_UTF8);
 
@@ -136,3 +137,4 @@ int main() {
     std::cout << "========================================\n";
     return 0;
 }
+#endif
